@@ -118,15 +118,15 @@ Startar allt i bakgrunden och öppnar dashboardet i webbläsaren. Ingen terminal
 
 ---
 
-## Första gången
+## Kom igång
 
-Öppna `http://localhost:5173` (eller det Lovable-URL du använder) i webbläsaren.
+1. Dubbelklicka `LiaBot.vbs` (eller kör `.\run.ps1`)
+2. Öppna [lia-tracker.lovable.app](https://lia-tracker.lovable.app)
+3. Gå till **Inställningar** — kontrollera att alla tre tjänster visar grönt
+4. Gå till **Sökord** — klicka "Generera med AI"
+5. Gå till **Dashboard** — klicka "Starta ny sökning"
 
-1. Gå till **Inställningar** — kontrollera att PostgreSQL, Ollama och Git visar grönt
-2. Gå till **Sökord** — klicka "Generera med AI" för att skapa relevanta sökord
-3. Gå till **Dashboard** — klicka "Starta ny sökning"
-
-Första sökningen tar 5–15 minuter beroende på din dator.
+Första sökningen tar 5–20 minuter. En detaljerad guide finns i **[USAGE.md](USAGE.md)** — eller direkt i dashboardet under **Guide**-fliken.
 
 ---
 
