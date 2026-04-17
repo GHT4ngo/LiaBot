@@ -6,15 +6,23 @@ Write-Host '  LiaBot - LIA-sokning for Data Engineering' -ForegroundColor Cyan
 Write-Host '  =============================================' -ForegroundColor Cyan
 Write-Host ''
 
-# --- Stoppa ALLA python-processer (rensar upp gamla kodfonstren) ---
-$pyProcs = Get-Process -Name 'python', 'python3' -ErrorAction SilentlyContinue
-if ($pyProcs) {
-    Write-Host "  [0/3] Stoppar $($pyProcs.Count) gammal(a) Python-process(er)..." -ForegroundColor Yellow
-    $pyProcs | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 1
-    Write-Host '  [0/3] Klart' -ForegroundColor Green
+# --- Stoppa processer som lyssnar på port 8002 och 8003 ---
+$killedAny = $false
+foreach ($port in @(8002, 8003)) {
+    $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    if ($listeners) {
+        $pidsToKill = $listeners.OwningProcess | Sort-Object -Unique
+        foreach ($procId in $pidsToKill) {
+            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+            $killedAny = $true
+        }
+    }
+}
+if ($killedAny) {
+    Write-Host '  [0/3] Gamla processer stoppade' -ForegroundColor Yellow
+    Start-Sleep -Seconds 2
 } else {
-    Write-Host '  [0/3] Inga gamla Python-processer att stoppa' -ForegroundColor DarkGray
+    Write-Host '  [0/3] Inga gamla processer att stoppa' -ForegroundColor DarkGray
 }
 
 # --- Ollama ---
