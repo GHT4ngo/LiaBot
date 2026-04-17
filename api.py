@@ -757,6 +757,29 @@ def git_pull():
         return {"ok": False, "output": str(e)}
 
 
+@app.get("/setup/version-check", tags=["Setup"])
+def version_check():
+    """Kontrollerar om det finns nya commits på origin/main."""
+    try:
+        import subprocess
+        # Fetch remote silently so we get up-to-date info
+        subprocess.run(
+            ["git", "-C", REPO_DIR, "fetch", "origin", "main", "--quiet"],
+            capture_output=True, timeout=10
+        )
+        # Count commits behind
+        r = subprocess.run(
+            ["git", "-C", REPO_DIR, "log", "HEAD..origin/main", "--oneline"],
+            capture_output=True, text=True, timeout=10
+        )
+        lines = [l for l in r.stdout.strip().splitlines() if l]
+        if r.returncode != 0:
+            return {"up_to_date": None, "commits_behind": 0, "error": r.stderr.strip()}
+        return {"up_to_date": len(lines) == 0, "commits_behind": len(lines)}
+    except Exception as e:
+        return {"up_to_date": None, "commits_behind": 0, "error": str(e)}
+
+
 # --- Start ---
 
 if __name__ == "__main__":
