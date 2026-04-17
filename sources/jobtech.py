@@ -19,19 +19,32 @@ MAX_RESULTS_PER_QUERY = 2000
 
 
 def _fetch_page(keyword: str, offset: int, location: str) -> dict:
-    """Hämtar en sida med träffar. location='stockholm' eller 'remote'."""
+    """
+    Hämtar en sida med träffar.
+    location = 'stockholm' | 'remote' | 'sweden'
+      - stockholm: Stockholms stad (municipality 0180)
+      - remote:    distansarbete (remote=true)
+      - sweden:    hela Sverige utan geografiskt filter — fångar Göteborg, Malmö, etc.
+    """
     if location == "stockholm":
         params = {
-            "q":           keyword,
+            "q":            keyword,
             "municipality": STOCKHOLM_MUNICIPALITY,
-            "offset":      offset,
-            "limit":       PAGE_SIZE,
-            "sort":        "pubdate-desc",
+            "offset":       offset,
+            "limit":        PAGE_SIZE,
+            "sort":         "pubdate-desc",
         }
-    else:
+    elif location == "remote":
         params = {
             "q":      keyword,
             "remote": "true",
+            "offset": offset,
+            "limit":  PAGE_SIZE,
+            "sort":   "pubdate-desc",
+        }
+    else:  # sweden — nationwide, no location filter
+        params = {
+            "q":      keyword,
             "offset": offset,
             "limit":  PAGE_SIZE,
             "sort":   "pubdate-desc",
@@ -124,7 +137,7 @@ def fetch_all(
     results: list[dict] = []
 
     for keyword in keywords:
-        for location in ("stockholm", "remote"):
+        for location in ("stockholm", "remote", "sweden"):
             if stop_flag[0]:
                 return results
 

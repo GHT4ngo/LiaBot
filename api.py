@@ -28,7 +28,7 @@ import analyzer
 app = FastAPI(
     title="LiaBot API",
     description="Hitta LIA-praktikplatser för Data Engineering",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 app.add_middleware(
@@ -566,7 +566,7 @@ def _run_search(use_ai: bool = True):
             _log(f"Ollama-modellen '{os.getenv('OLLAMA_MODEL')}' hittades inte. Sparar utan AI-analys.", "error")
             use_ai = False
 
-        _log("Hämtar från JobTech (Platsbanken + 200 sajter)...", "search")
+        _log("Hämtar från JobTech (Stockholm + distans + hela Sverige)...", "search")
         jobs = jobtech.fetch_all(keywords, stop_flag=_stop_flag)
         _log(f"JobTech: {len(jobs)} annonser hämtade", "search")
 
