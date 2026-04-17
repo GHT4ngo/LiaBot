@@ -1,0 +1,8 @@
+httpx
+beautifulsoup4
+ollama
+fastapi
+uvicorn[standard]
+psycopg2-binary
+python-dotenv
+rich
