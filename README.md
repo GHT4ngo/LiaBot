@@ -11,7 +11,7 @@ LiaBot söker automatiskt igenom svenska jobbsajter och karriärsidor efter LIA-
 - Söker JobTech API (Arbetsförmedlingen/Platsbanken — täcker 200+ svenska jobbsajter)
 - Skrapar karriärsidor hos 30+ svenska techbolag och konsultfirmor
 - Analyserar varje annons med Ollama (lokal AI — din data lämnar aldrig datorn)
-- Visar resultaten i ett webbdashboard med kanban-pipeline, sökordsgenerator och systemlogg
+- Visar resultaten i ett webbdashboard med uppföljningslistor, sökordsgenerator och systemlogg
 - Låter dig starta/stoppa/starta om allt från webbläsaren
 
 ---
@@ -22,6 +22,7 @@ LiaBot söker automatiskt igenom svenska jobbsajter och karriärsidor efter LIA-
 |---------|---------|------|
 | Python | 3.11+ | [python.org](https://www.python.org/downloads/) |
 | PostgreSQL | 14+ | [postgresql.org](https://www.postgresql.org/download/) |
+| DBeaver (rekommenderat) | senaste | [dbeaver.io/download](https://dbeaver.io/download/) |
 | Ollama | senaste | [ollama.com](https://ollama.com/) |
 | Git | senaste | [git-scm.com](https://git-scm.com/) |
 
@@ -48,13 +49,37 @@ pip install -r requirements.txt
 
 ### 3. Skapa databasen i PostgreSQL
 
-Öppna `psql` eller pgAdmin och kör:
+Du behöver skapa en tom databas som heter `liabot`. Det enklaste sättet är via **DBeaver** — ett gratis grafiskt databasverktyg.
 
-```sql
-CREATE DATABASE liabot;
-```
+**Ladda ned DBeaver:** [dbeaver.io/download](https://dbeaver.io/download/) → välj *Community Edition*
 
-Standard PostgreSQL-inloggning är `postgres` / det lösenord du satte vid installation.
+**Anslut till PostgreSQL i DBeaver:**
+
+1. Öppna DBeaver och klicka på **"New Database Connection"** (pluggikonen uppe till vänster)
+2. Välj **PostgreSQL** och klicka *Next*
+3. Fyll i anslutningsuppgifterna:
+
+   | Fält | Värde |
+   |------|-------|
+   | Host | `localhost` |
+   | Port | `5432` |
+   | Database | `postgres` |
+   | Username | `postgres` |
+   | Password | Det lösenord du satte när du installerade PostgreSQL |
+
+4. Klicka **Test Connection** — du ska se *Connected*. Klicka sedan *Finish*
+
+**Skapa databasen:**
+
+5. Expandera anslutningen i vänsterpanelen → högerklicka på **Databases** → **Create New Database**
+6. Skriv `liabot` som namn → klicka *OK*
+
+Klart! Databasen `liabot` är nu skapad och redo att användas.
+
+> **Alternativ (för den som föredrar terminalen):** Öppna PowerShell och kör:
+> ```powershell
+> psql -U postgres -c "CREATE DATABASE liabot;"
+> ```
 
 ### 4. Installera och starta Ollama
 
@@ -158,7 +183,8 @@ LiaBot/
 
 - Kontrollera att PostgreSQL-tjänsten kör: `services.msc` → PostgreSQL
 - Kontrollera `PG_PASSWORD` i `.env` — lösenordet är det du satte vid installation
-- Se till att databasen `liabot` finns: `psql -U postgres -c "\l"`
+- Verifiera att databasen `liabot` finns — öppna DBeaver, expandera anslutningen och titta under *Databases*
+- Alternativt via terminal: `psql -U postgres -c "\l"`
 
 ### Ollama hittas inte
 

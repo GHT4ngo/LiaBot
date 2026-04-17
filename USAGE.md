@@ -6,6 +6,40 @@ En interaktiv version av den här guiden finns direkt i dashboardet under **Guid
 
 ---
 
+## Förkrav — Sätt upp PostgreSQL-databasen
+
+Innan du startar LiaBot första gången behöver du skapa en tom databas som heter `liabot`.
+
+Det enklaste sättet är via **DBeaver** — ett gratis grafiskt databasverktyg.
+Ladda ned det här: [dbeaver.io/download](https://dbeaver.io/download/) → välj *Community Edition*
+
+**Anslut till PostgreSQL:**
+
+1. Öppna DBeaver → klicka på **"New Database Connection"** (pluggikonen uppe till vänster)
+2. Välj **PostgreSQL** → klicka *Next*
+3. Fyll i:
+
+   | Fält | Värde |
+   |------|-------|
+   | Host | `localhost` |
+   | Port | `5432` |
+   | Database | `postgres` |
+   | Username | `postgres` |
+   | Password | Lösenordet du satte vid installation av PostgreSQL |
+
+4. Klicka **Test Connection** → du ska se *Connected* → klicka *Finish*
+
+**Skapa databasen `liabot`:**
+
+5. Expandera anslutningen i vänsterpanelen → högerklicka på **Databases** → **Create New Database**
+6. Skriv `liabot` som namn → klicka *OK*
+
+Klart! Nu kan du starta LiaBot.
+
+> **Alternativ (terminal):** `psql -U postgres -c "CREATE DATABASE liabot;"`
+
+---
+
 ## Steg 1 — Kontrollera att allt är igång (Inställningar)
 
 Gå till **Inställningar** i sidomenyn och klicka **"Testa alla"**.
