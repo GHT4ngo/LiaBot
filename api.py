@@ -41,6 +41,7 @@ app.add_middleware(
 
 # --- Pydantic-modeller ---
 
+
 class JobOut(BaseModel):
     id: int
     source: str
@@ -124,12 +125,13 @@ class KeywordsIn(BaseModel):
 
 # In-memory loggsystem
 _search_running = False
-_search_log: list[str] = []        # kompat: används av /search/status
+_search_log: list[str] = []  # kompat: används av /search/status
 _stop_flag: list[bool] = [False]
 _search_generation = 0
 
 from collections import deque
 import threading
+
 _log_lock = threading.Lock()
 _log_buffer: deque = deque(maxlen=1000)  # {ts, msg, cat}
 
@@ -137,9 +139,9 @@ _log_buffer: deque = deque(maxlen=1000)  # {ts, msg, cat}
 def _log(msg: str, cat: str = "system"):
     """Lägg till en loggpost i bufferten och skriv till stdout."""
     entry = {
-        "ts":  datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(timezone.utc).isoformat(),
         "msg": msg,
-        "cat": cat,   # system | search | ai | success | error
+        "cat": cat,  # system | search | ai | success | error
     }
     with _log_lock:
         _log_buffer.append(entry)
@@ -148,6 +150,7 @@ def _log(msg: str, cat: str = "system"):
 
 
 # --- Endpoints ---
+
 
 @app.on_event("startup")
 def on_startup():
@@ -229,13 +232,14 @@ def get_stats():
     relevant = db.count_jobs(relevant_only=True)
     uncontacted = db.count_jobs(relevant_only=True, uncontacted_only=True)
     return {
-        "total_jobs":          total,
-        "relevant_jobs":       relevant,
+        "total_jobs": total,
+        "relevant_jobs": relevant,
         "uncontacted_relevant": uncontacted,
     }
 
 
 # --- Anpassade källor ---
+
 
 @app.get("/sources", response_model=list[SourceOut], tags=["Källor"])
 def get_sources():
@@ -322,7 +326,7 @@ def get_locations():
         selected = jobtech.DEFAULT_LOCATIONS
     return {
         "available": jobtech.AVAILABLE_LOCATIONS,
-        "selected":  selected,
+        "selected": selected,
     }
 
 
@@ -333,6 +337,7 @@ def update_locations(body: LocationsIn):
     cleaned = [loc.strip() for loc in body.locations if loc.strip() in valid_ids]
     if not cleaned:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="Minst en giltig plats krävs")
     value = ",".join(cleaned)
     os.environ["SEARCH_LOCATIONS"] = value
@@ -356,7 +361,10 @@ def keywords_from_intent(body: IntentIn):
     _write_env_var("SEARCH_INTENT", body.intent)
 
     if not analyzer.check_ollama_available():
-        raise HTTPException(status_code=503, detail="Ollama ej tillgänglig — starta Ollama och försök igen")
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama ej tillgänglig — starta Ollama och försök igen",
+        )
 
     extra = f"\nExtra kontext: {body.extra_context}" if body.extra_context else ""
     prompt = f"""Du hjälper en Data Engineering-student att hitta LIA-praktikplats i Sverige via JobTech API.
@@ -388,8 +396,11 @@ Svara ENBART med ett JSON-objekt:
 
     try:
         import ollama as _ol, re, json
+
         client = _ol.Client(host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-        resp = client.generate(model=os.getenv("OLLAMA_MODEL", "llama3.2"), prompt=prompt)
+        resp = client.generate(
+            model=os.getenv("OLLAMA_MODEL", "llama3.2"), prompt=prompt
+        )
         # Strip markdown fences and // comments before parsing
         clean = re.sub(r"```(?:json)?", "", resp.response).strip()
         clean = re.sub(r"//[^\n]*", "", clean)
@@ -405,7 +416,9 @@ Svara ENBART med ett JSON-objekt:
                     if isinstance(v, list):
                         keywords += [x for x in v if isinstance(x, str)]
         if not keywords:
-            raise HTTPException(status_code=500, detail="Ollama returnerade inga sökord — försök igen")
+            raise HTTPException(
+                status_code=500, detail="Ollama returnerade inga sökord — försök igen"
+            )
         os.environ["SEARCH_KEYWORDS"] = ",".join(keywords)
         _write_keywords_to_env(keywords)
         _log(f"Sökord genererade från avsikt: {len(keywords)} st", "ai")
@@ -437,8 +450,11 @@ Svara ENBART med ett JSON-objekt:
 
     try:
         import ollama as _ol, re, json
+
         client = _ol.Client(host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-        resp = client.generate(model=os.getenv("OLLAMA_MODEL", "llama3.2"), prompt=prompt)
+        resp = client.generate(
+            model=os.getenv("OLLAMA_MODEL", "llama3.2"), prompt=prompt
+        )
         m = re.search(r"\{.*\}", resp.response, re.DOTALL)
         suggestions = json.loads(m.group()).get("suggestions", []) if m else []
         return {"suggestions": suggestions}
@@ -448,6 +464,7 @@ Svara ENBART med ett JSON-objekt:
 
 # --- System ---
 
+
 @app.post("/system/restart", tags=["System"])
 def restart_api():
     """Startar om API-processen via launcher (port 8003)."""
@@ -455,6 +472,7 @@ def restart_api():
 
     def _do_restart():
         import time, subprocess
+
         _log("Startar om API...", "system")
         time.sleep(0.3)
 
@@ -476,6 +494,7 @@ def restart_api():
         # Now start a fresh API via the launcher
         try:
             import httpx as _hx
+
             _hx.post("http://localhost:8003/start", timeout=5)
         except Exception:
             subprocess.Popen(
@@ -490,6 +509,7 @@ def restart_api():
 
 
 # --- Sökning (bakgrundsprocess) ---
+
 
 @app.post("/search", response_model=SearchStatus, tags=["Sökning"])
 def trigger_search(background_tasks: BackgroundTasks, use_ai: bool = True):
@@ -511,7 +531,7 @@ def search_status():
     """Returnerar status för pågående/senaste sökning."""
     return {
         "running": _search_running,
-        "log":     _search_log[-50:],  # senaste 50 rader
+        "log": _search_log[-50:],  # senaste 50 rader
     }
 
 
@@ -540,6 +560,7 @@ def refresh_job(job_id: int, background_tasks: BackgroundTasks):
         try:
             import httpx as _httpx
             from sources.jobtech import _normalize_hit as _nh
+
             resp = _httpx.get(
                 f"https://jobsearch.api.jobtechdev.se/ad/{job['source_id']}",
                 headers={"accept": "application/json"},
@@ -621,23 +642,35 @@ def _run_search(use_ai: bool = True):
     try:
         keywords_raw = os.getenv(
             "SEARCH_KEYWORDS",
-            "data engineer,data analyst,dataingenjör,BI-utvecklare,ETL"
+            "data engineer,data analyst,dataingenjör,BI-utvecklare,ETL",
         )
         keywords = [k.strip() for k in keywords_raw.split(",") if k.strip()]
 
         if use_ai and not analyzer.check_ollama_available():
-            _log(f"Ollama-modellen '{os.getenv('OLLAMA_MODEL')}' hittades inte. Sparar utan AI-analys.", "error")
+            _log(
+                f"Ollama-modellen '{os.getenv('OLLAMA_MODEL')}' hittades inte. Sparar utan AI-analys.",
+                "error",
+            )
             use_ai = False
 
         locations_raw = os.getenv("SEARCH_LOCATIONS", "")
-        locations = [loc.strip() for loc in locations_raw.split(",") if loc.strip()] or jobtech.DEFAULT_LOCATIONS
+        locations = [
+            loc.strip() for loc in locations_raw.split(",") if loc.strip()
+        ] or jobtech.DEFAULT_LOCATIONS
         location_labels = ", ".join(
-            next((l["label"] for l in jobtech.AVAILABLE_LOCATIONS if l["id"] == loc), loc)
+            next(
+                (l["label"] for l in jobtech.AVAILABLE_LOCATIONS if l["id"] == loc), loc
+            )
             for loc in locations
         )
         known_ids = db.get_known_source_ids("jobtech")
-        _log(f"Hämtar från JobTech ({location_labels}) — {len(known_ids)} redan kända annonser hoppas över...", "search")
-        jobs = jobtech.fetch_all(keywords, locations=locations, known_ids=known_ids, stop_flag=_stop_flag)
+        _log(
+            f"Hämtar från JobTech ({location_labels}) — {len(known_ids)} redan kända annonser hoppas över...",
+            "search",
+        )
+        jobs = jobtech.fetch_all(
+            keywords, locations=locations, known_ids=known_ids, stop_flag=_stop_flag
+        )
         _log(f"JobTech: {len(jobs)} annonser hämtade", "search")
 
         if not _stop_flag[0]:
@@ -665,7 +698,10 @@ def _run_search(use_ai: bool = True):
                 _log("Sökning stoppad av användaren.", "system")
                 break
             if use_ai:
-                _log(f"Analyserar ({i}/{len(jobs)}): {job.get('company_name', '?')} — {job.get('job_title', '?')[:50]}", "ai")
+                _log(
+                    f"Analyserar ({i}/{len(jobs)}): {job.get('company_name', '?')} — {job.get('job_title', '?')[:50]}",
+                    "ai",
+                )
                 job = analyzer.analyze_job(job)
             job_id = db.upsert_job(job)
             if job_id:
@@ -673,7 +709,10 @@ def _run_search(use_ai: bool = True):
             else:
                 duplicate_count += 1
 
-        _log(f"Klart! {new_count} nya jobb sparade. {duplicate_count} redan i databasen.", "success")
+        _log(
+            f"Klart! {new_count} nya jobb sparade. {duplicate_count} redan i databasen.",
+            "success",
+        )
     except Exception as e:
         _log(f"Fel under sökning: {e}", "error")
     finally:
@@ -686,8 +725,16 @@ ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Keys that are safe to expose to the frontend (no raw passwords)
-_SAFE_KEYS = {"PG_HOST", "PG_PORT", "PG_DATABASE", "PG_USER",
-              "OLLAMA_MODEL", "OLLAMA_BASE_URL", "API_HOST", "API_PORT"}
+_SAFE_KEYS = {
+    "PG_HOST",
+    "PG_PORT",
+    "PG_DATABASE",
+    "PG_USER",
+    "OLLAMA_MODEL",
+    "OLLAMA_BASE_URL",
+    "API_HOST",
+    "API_PORT",
+}
 _SECRET_KEYS = {"PG_PASSWORD"}
 
 
@@ -738,6 +785,7 @@ def setup_health():
     # PostgreSQL
     try:
         import database as _db
+
         conn = _db.get_conn()
         cur = conn.cursor()
         cur.execute("SELECT 1")
@@ -750,6 +798,7 @@ def setup_health():
     # Ollama
     try:
         import httpx as _hx
+
         base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         r = _hx.get(f"{base}/api/tags", timeout=4)
         models = [m["name"] for m in r.json().get("models", [])]
@@ -766,9 +815,13 @@ def setup_health():
     # Git
     try:
         import subprocess
+
         r = subprocess.run(
             ["git", "log", "-1", "--format=%h %s"],
-            cwd=REPO_DIR, capture_output=True, text=True, timeout=5
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if r.returncode == 0:
             result["git"] = {"ok": True, "message": r.stdout.strip()}
@@ -816,10 +869,14 @@ def update_config(update: ConfigUpdate):
 def git_pull():
     """Kör git pull för att hämta senaste versionen från GitHub."""
     import subprocess
+
     try:
         r = subprocess.run(
             ["git", "pull", "--rebase"],
-            cwd=REPO_DIR, capture_output=True, text=True, timeout=30
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         output = (r.stdout + r.stderr).strip()
         ok = r.returncode == 0
@@ -835,15 +892,19 @@ def version_check():
     """Kontrollerar om det finns nya commits på origin/main."""
     try:
         import subprocess
+
         # Fetch remote silently so we get up-to-date info
         subprocess.run(
             ["git", "-C", REPO_DIR, "fetch", "origin", "main", "--quiet"],
-            capture_output=True, timeout=10
+            capture_output=True,
+            timeout=10,
         )
         # Count commits behind
         r = subprocess.run(
             ["git", "-C", REPO_DIR, "log", "HEAD..origin/main", "--oneline"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         lines = [l for l in r.stdout.strip().splitlines() if l]
         if r.returncode != 0:
@@ -857,6 +918,7 @@ def version_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "api:app",
         host=os.getenv("API_HOST", "0.0.0.0"),

@@ -30,18 +30,36 @@ HEADERS = {
 
 # Nyckelord i URL-sökvägar som tyder på en individuell jobbannons
 JOB_PATH_SIGNALS = [
-    "job", "jobs", "career", "careers", "jobb", "jobbannons", "position",
-    "opening", "vacancy", "vacancies", "role", "tjänst", "annons",
-    "apply", "ansök", "rekrytering",
+    "job",
+    "jobs",
+    "career",
+    "careers",
+    "jobb",
+    "jobbannons",
+    "position",
+    "opening",
+    "vacancy",
+    "vacancies",
+    "role",
+    "tjänst",
+    "annons",
+    "apply",
+    "ansök",
+    "rekrytering",
 ]
 
 # Nyckelord i URL-sökvägar som tyder på en listningssida (skippa dessa)
 LISTING_PATH_SIGNALS = [
-    "search", "filter", "category", "department", "location", "team",
+    "search",
+    "filter",
+    "category",
+    "department",
+    "location",
+    "team",
 ]
 
-MAX_JOB_LINKS = 40   # max antal enskilda annonslänkar att följa per källa
-MAX_TEXT_LEN  = 4000  # tecken att skicka till AI:n per annons
+MAX_JOB_LINKS = 40  # max antal enskilda annonslänkar att följa per källa
+MAX_TEXT_LEN = 4000  # tecken att skicka till AI:n per annons
 
 
 def _url_to_source_id(url: str) -> str:
@@ -111,19 +129,19 @@ def _make_job_dict(url: str, html: str, source_name: str) -> dict:
     title = (soup.title.get_text().strip() if soup.title else "") or url
     text = _clean_text(html)
     return {
-        "source":          source_name,
-        "source_id":       _url_to_source_id(url),
-        "source_url":      url,
-        "company_name":    source_name,
-        "company_url":     url,
-        "contact_person":  None,
-        "contact_email":   None,
-        "job_title":       title[:200],
+        "source": source_name,
+        "source_id": _url_to_source_id(url),
+        "source_url": url,
+        "company_name": source_name,
+        "company_url": url,
+        "contact_person": None,
+        "contact_email": None,
+        "job_title": title[:200],
         "job_description": text[:MAX_TEXT_LEN],
-        "location":        None,
-        "is_remote":       False,
-        "is_relevant":     None,
-        "relevance_note":  None,
+        "location": None,
+        "is_remote": False,
+        "is_relevant": None,
+        "relevance_note": None,
     }
 
 
@@ -173,5 +191,7 @@ def scrape_all(sources: list[dict], verbose: bool = True) -> list[dict]:
         all_jobs.extend(jobs)
 
     if verbose:
-        print(f"  Webb-skrapare totalt: {len(all_jobs)} annonser från {len(sources)} källor.")
+        print(
+            f"  Webb-skrapare totalt: {len(all_jobs)} annonser från {len(sources)} källor."
+        )
     return all_jobs

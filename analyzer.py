@@ -111,25 +111,30 @@ REGLER för cold_contact (oberoende av relevant):
 
         is_relevant = bool(data.get("relevant", False))
         raw_priority = data.get("priority")
-        priority = int(raw_priority) if raw_priority in (1, 2, 3) else (2 if is_relevant else 3)
+        priority = (
+            int(raw_priority)
+            if raw_priority in (1, 2, 3)
+            else (2 if is_relevant else 3)
+        )
 
         return {
             **job,
-            "is_relevant":    is_relevant,
-            "cold_contact":   bool(data.get("cold_contact", False)),
-            "priority":       priority,
+            "is_relevant": is_relevant,
+            "cold_contact": bool(data.get("cold_contact", False)),
+            "priority": priority,
             "relevance_note": data.get("reason") or "",
-            "ai_highlight":   data.get("ai_highlight") or None,
-            "prerequisites":  data.get("prerequisites") or None,
+            "ai_highlight": data.get("ai_highlight") or None,
+            "prerequisites": data.get("prerequisites") or None,
             "contact_person": data.get("contact_person") or job.get("contact_person"),
-            "contact_email":  email or job.get("contact_email"),
-            "relevant_period": data.get("relevant_period") or job.get("relevant_period"),
-            "start_date":     _safe_date(data.get("start_date")) or job.get("start_date"),
+            "contact_email": email or job.get("contact_email"),
+            "relevant_period": data.get("relevant_period")
+            or job.get("relevant_period"),
+            "start_date": _safe_date(data.get("start_date")) or job.get("start_date"),
         }
     except Exception as e:
         return {
             **job,
-            "is_relevant":  False,
+            "is_relevant": False,
             "cold_contact": False,
             "relevance_note": f"Analysfel: {e}",
         }
@@ -137,7 +142,9 @@ REGLER för cold_contact (oberoende av relevant):
 
 def check_ollama_available() -> bool:
     try:
-        client = ollama.Client(host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+        client = ollama.Client(
+            host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        )
         models = client.list()
         model_names = [m.model for m in models.models]
         return any(MODEL in name for name in model_names)

@@ -67,22 +67,22 @@ def init_db():
 
     # Lägg till nya kolumner om de saknas (migration för befintliga databaser)
     new_columns = [
-        ("contact_title",    "TEXT"),
+        ("contact_title", "TEXT"),
         ("contact_linkedin", "TEXT"),
-        ("ai_highlight",     "TEXT"),
-        ("prerequisites",    "TEXT"),
-        ("posted_date",      "DATE"),
-        ("relevant_period",  "TEXT"),
-        ("start_date",       "DATE"),
-        ("tracking_status",  "TEXT DEFAULT 'Ny'"),
-        ("lead_source",      "TEXT DEFAULT 'Annons'"),
-        ("priority",         "INTEGER DEFAULT 2"),
-        ("date_sent",        "DATE"),
-        ("reply_received",   "BOOLEAN DEFAULT FALSE"),
-        ("reply_date",       "DATE"),
-        ("next_step",        "TEXT"),
-        ("user_comment",     "TEXT"),
-        ("cold_contact",     "BOOLEAN DEFAULT FALSE"),
+        ("ai_highlight", "TEXT"),
+        ("prerequisites", "TEXT"),
+        ("posted_date", "DATE"),
+        ("relevant_period", "TEXT"),
+        ("start_date", "DATE"),
+        ("tracking_status", "TEXT DEFAULT 'Ny'"),
+        ("lead_source", "TEXT DEFAULT 'Annons'"),
+        ("priority", "INTEGER DEFAULT 2"),
+        ("date_sent", "DATE"),
+        ("reply_received", "BOOLEAN DEFAULT FALSE"),
+        ("reply_date", "DATE"),
+        ("next_step", "TEXT"),
+        ("user_comment", "TEXT"),
+        ("cold_contact", "BOOLEAN DEFAULT FALSE"),
     ]
     for col, col_type in new_columns:
         try:
@@ -139,7 +139,8 @@ def upsert_job(job: dict) -> int | None:
 
     source_id = job.get("source_id") or job.get("source_url", "")[:200]
 
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO jobs
             (source, source_id, source_url, company_name, company_url,
              contact_person, contact_email, contact_title, contact_linkedin,
@@ -158,30 +159,32 @@ def upsert_job(job: dict) -> int | None:
              %(is_relevant)s, %(cold_contact)s, %(relevance_note)s, %(scraped_at)s)
         ON CONFLICT (source, source_id) DO NOTHING
         RETURNING id;
-    """, {
-        "source":           job.get("source", "unknown"),
-        "source_id":        source_id,
-        "source_url":       job.get("source_url"),
-        "company_name":     job.get("company_name"),
-        "company_url":      job.get("company_url"),
-        "contact_person":   job.get("contact_person"),
-        "contact_email":    job.get("contact_email"),
-        "contact_title":    job.get("contact_title"),
-        "contact_linkedin": job.get("contact_linkedin"),
-        "job_title":        job.get("job_title"),
-        "job_description":  job.get("job_description"),
-        "ai_highlight":     job.get("ai_highlight"),
-        "prerequisites":    job.get("prerequisites"),
-        "location":         job.get("location"),
-        "is_remote":        job.get("is_remote", False),
-        "posted_date":      job.get("posted_date"),
-        "relevant_period":  job.get("relevant_period"),
-        "start_date":       job.get("start_date"),
-        "is_relevant":      job.get("is_relevant"),
-        "cold_contact":     job.get("cold_contact", False),
-        "relevance_note":   job.get("relevance_note"),
-        "scraped_at":       datetime.now(timezone.utc),
-    })
+    """,
+        {
+            "source": job.get("source", "unknown"),
+            "source_id": source_id,
+            "source_url": job.get("source_url"),
+            "company_name": job.get("company_name"),
+            "company_url": job.get("company_url"),
+            "contact_person": job.get("contact_person"),
+            "contact_email": job.get("contact_email"),
+            "contact_title": job.get("contact_title"),
+            "contact_linkedin": job.get("contact_linkedin"),
+            "job_title": job.get("job_title"),
+            "job_description": job.get("job_description"),
+            "ai_highlight": job.get("ai_highlight"),
+            "prerequisites": job.get("prerequisites"),
+            "location": job.get("location"),
+            "is_remote": job.get("is_remote", False),
+            "posted_date": job.get("posted_date"),
+            "relevant_period": job.get("relevant_period"),
+            "start_date": job.get("start_date"),
+            "is_relevant": job.get("is_relevant"),
+            "cold_contact": job.get("cold_contact", False),
+            "relevance_note": job.get("relevance_note"),
+            "scraped_at": datetime.now(timezone.utc),
+        },
+    )
 
     row = cur.fetchone()
     conn.commit()
@@ -190,13 +193,20 @@ def upsert_job(job: dict) -> int | None:
     return row[0] if row else None
 
 
-def update_job_analysis(job_id: int, is_relevant: bool, relevance_note: str,
-                        contact_person: str | None, contact_email: str | None,
-                        ai_highlight: str | None = None, prerequisites: str | None = None):
+def update_job_analysis(
+    job_id: int,
+    is_relevant: bool,
+    relevance_note: str,
+    contact_person: str | None,
+    contact_email: str | None,
+    ai_highlight: str | None = None,
+    prerequisites: str | None = None,
+):
     """Uppdaterar Ollama-analys-fälten på ett befintligt jobb."""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         UPDATE jobs
         SET is_relevant    = %s,
             relevance_note = %s,
@@ -205,20 +215,43 @@ def update_job_analysis(job_id: int, is_relevant: bool, relevance_note: str,
             ai_highlight   = COALESCE(%s, ai_highlight),
             prerequisites  = COALESCE(%s, prerequisites)
         WHERE id = %s;
-    """, (is_relevant, relevance_note, contact_person, contact_email,
-          ai_highlight, prerequisites, job_id))
+    """,
+        (
+            is_relevant,
+            relevance_note,
+            contact_person,
+            contact_email,
+            ai_highlight,
+            prerequisites,
+            job_id,
+        ),
+    )
     conn.commit()
     cur.close()
     conn.close()
 
 
 PATCHABLE_FIELDS = {
-    "tracking_status", "lead_source", "priority", "contact_person",
-    "contact_title", "contact_email", "contact_linkedin", "date_sent",
-    "reply_received", "reply_date", "next_step", "user_comment",
-    "relevant_period", "start_date", "company_url",
-    "posted_date", "ai_highlight", "prerequisites",
+    "tracking_status",
+    "lead_source",
+    "priority",
+    "contact_person",
+    "contact_title",
+    "contact_email",
+    "contact_linkedin",
+    "date_sent",
+    "reply_received",
+    "reply_date",
+    "next_step",
+    "user_comment",
+    "relevant_period",
+    "start_date",
+    "company_url",
+    "posted_date",
+    "ai_highlight",
+    "prerequisites",
 }
+
 
 def patch_job(job_id: int, fields: dict) -> bool:
     """
@@ -233,7 +266,7 @@ def patch_job(job_id: int, fields: dict) -> bool:
     set_clause = ", ".join(f"{k} = %s" for k in safe)
     cur.execute(
         f"UPDATE jobs SET {set_clause} WHERE id = %s RETURNING id;",
-        list(safe.values()) + [job_id]
+        list(safe.values()) + [job_id],
     )
     updated = cur.fetchone() is not None
     conn.commit()
@@ -242,8 +275,12 @@ def patch_job(job_id: int, fields: dict) -> bool:
     return updated
 
 
-def list_jobs(relevant_only: bool = True, uncontacted_only: bool = False,
-              limit: int = 200, offset: int = 0) -> list[dict]:
+def list_jobs(
+    relevant_only: bool = True,
+    uncontacted_only: bool = False,
+    limit: int = 200,
+    offset: int = 0,
+) -> list[dict]:
     """Hämtar jobb som en lista av dicts."""
     conn = get_conn()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -256,12 +293,15 @@ def list_jobs(relevant_only: bool = True, uncontacted_only: bool = False,
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-    cur.execute(f"""
+    cur.execute(
+        f"""
         SELECT * FROM jobs
         {where}
         ORDER BY scraped_at DESC
         LIMIT %s OFFSET %s;
-    """, (limit, offset))
+    """,
+        (limit, offset),
+    )
 
     rows = [dict(r) for r in cur.fetchall()]
     cur.close()
@@ -318,12 +358,12 @@ def count_jobs(relevant_only: bool = False, uncontacted_only: bool = False) -> i
 
 # --- Källor (anpassade URL:er) ---
 
+
 def add_source(name: str, url: str) -> int:
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO sources (name, url) VALUES (%s, %s) RETURNING id;",
-        (name, url)
+        "INSERT INTO sources (name, url) VALUES (%s, %s) RETURNING id;", (name, url)
     )
     new_id = cur.fetchone()[0]
     conn.commit()
@@ -378,10 +418,7 @@ def seed_default_sources(sources: list[dict]):
     if to_remove:
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(
-            "DELETE FROM sources WHERE id = ANY(%s);",
-            (to_remove,)
-        )
+        cur.execute("DELETE FROM sources WHERE id = ANY(%s);", (to_remove,))
         conn.commit()
         cur.close()
         conn.close()
@@ -394,7 +431,9 @@ def seed_default_sources(sources: list[dict]):
 
     removed = len(to_remove)
     if added or removed:
-        print(f"Standardkällor synkade: +{added} nya, -{removed} borttagna, {len(sources)} totalt")
+        print(
+            f"Standardkällor synkade: +{added} nya, -{removed} borttagna, {len(sources)} totalt"
+        )
 
 
 def toggle_source(source_id: int, enabled: bool):
@@ -407,6 +446,7 @@ def toggle_source(source_id: int, enabled: bool):
 
 
 # --- Search run tracking (stop/resume) ---
+
 
 def create_search_run(run_id: str):
     """Skapar en ny sökkörning."""
@@ -439,24 +479,36 @@ def mark_run_status(run_id: str, status: str):
     conn = get_conn()
     cur = conn.cursor()
     if status == "completed":
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE search_runs
             SET status = %s, completed_at = NOW()
             WHERE run_id = %s;
-        """, (status, run_id))
+        """,
+            (status, run_id),
+        )
     else:
-        cur.execute("UPDATE search_runs SET status = %s WHERE run_id = %s;", (status, run_id))
+        cur.execute(
+            "UPDATE search_runs SET status = %s WHERE run_id = %s;", (status, run_id)
+        )
     conn.commit()
     cur.close()
     conn.close()
 
 
-def upsert_search_progress(run_id: str, source: str, keyword: str,
-                           last_offset: int, total: int | None, completed: bool):
+def upsert_search_progress(
+    run_id: str,
+    source: str,
+    keyword: str,
+    last_offset: int,
+    total: int | None,
+    completed: bool,
+):
     """Sparar/uppdaterar progress för en (run_id, source, keyword)-kombination."""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO search_progress (run_id, source, keyword, last_offset, total, completed, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s, NOW())
         ON CONFLICT (run_id, source, keyword)
@@ -465,7 +517,9 @@ def upsert_search_progress(run_id: str, source: str, keyword: str,
             total       = EXCLUDED.total,
             completed   = EXCLUDED.completed,
             updated_at  = NOW();
-    """, (run_id, source, keyword, last_offset, total, completed))
+    """,
+        (run_id, source, keyword, last_offset, total, completed),
+    )
     conn.commit()
     cur.close()
     conn.close()
@@ -486,7 +540,10 @@ def get_known_source_ids(source: str = "jobtech") -> set[str]:
     """Returnerar alla source_id:n vi redan har för en given källa."""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT source_id FROM jobs WHERE source = %s AND source_id IS NOT NULL;", (source,))
+    cur.execute(
+        "SELECT source_id FROM jobs WHERE source = %s AND source_id IS NOT NULL;",
+        (source,),
+    )
     ids = {row[0] for row in cur.fetchall()}
     cur.close()
     conn.close()
@@ -508,13 +565,16 @@ def get_unanalyzed_jobs(limit: int = 1000) -> list[dict]:
     """Hämtar jobb utan analys, sorterat på id."""
     conn = get_conn()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("""
+    cur.execute(
+        """
         SELECT id, job_title, job_description, company_name
         FROM jobs
         WHERE is_relevant IS NULL
         ORDER BY id
         LIMIT %s;
-    """, (limit,))
+    """,
+        (limit,),
+    )
     rows = [dict(r) for r in cur.fetchall()]
     cur.close()
     conn.close()

@@ -45,15 +45,18 @@ class _Handler(BaseHTTPRequestHandler):
             # This prevents port conflicts when the old reloader hasn't fully
             # exited yet (e.g. if restart was called from the in-app terminal).
             import time
+
             try:
                 subprocess.run(
                     [
-                        "powershell", "-NoProfile", "-Command",
+                        "powershell",
+                        "-NoProfile",
+                        "-Command",
                         "Get-NetTCPConnection -LocalPort 8002 -State Listen "
                         "-ErrorAction SilentlyContinue | "
                         "Select-Object -ExpandProperty OwningProcess | "
                         "Sort-Object -Unique | "
-                        "ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
+                        "ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }",
                     ],
                     capture_output=True,
                     timeout=5,

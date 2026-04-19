@@ -32,7 +32,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    BarColumn,
+    TextColumn,
+    MofNCompleteColumn,
+)
 from rich.text import Text
 from rich.rule import Rule
 from rich import box
@@ -51,10 +57,10 @@ console = Console(legacy_windows=False)
 # Hjälpfunktioner
 # ---------------------------------------------------------------------------
 
+
 def _keywords() -> list[str]:
     raw = os.getenv(
-        "SEARCH_KEYWORDS",
-        "data engineer,data analyst,dataingenjör,BI-utvecklare,ETL"
+        "SEARCH_KEYWORDS", "data engineer,data analyst,dataingenjör,BI-utvecklare,ETL"
     )
     return [k.strip() for k in raw.split(",") if k.strip()]
 
@@ -70,6 +76,7 @@ def _header(run_id: str = "", started: str = "") -> Panel:
 # cmd_init_db
 # ---------------------------------------------------------------------------
 
+
 def cmd_init_db():
     db.init_db()
     console.print("[green]✓[/] Databas initialiserad.")
@@ -79,6 +86,7 @@ def cmd_init_db():
 # cmd_search
 # ---------------------------------------------------------------------------
 
+
 def cmd_search(use_ai: bool = True):
     db.init_db()
     keywords = _keywords()
@@ -87,7 +95,9 @@ def cmd_search(use_ai: bool = True):
     if use_ai:
         if not analyzer.check_ollama_available():
             model = os.getenv("OLLAMA_MODEL", "llama3.2")
-            console.print(f"[yellow]Varning:[/] Ollama-modellen [bold]{model}[/] hittades inte.")
+            console.print(
+                f"[yellow]Varning:[/] Ollama-modellen [bold]{model}[/] hittades inte."
+            )
             console.print(f"  Kör: [cyan]ollama pull {model}[/]")
             console.print("  Fortsätter utan AI-analys.")
             use_ai = False
@@ -104,7 +114,11 @@ def cmd_search(use_ai: bool = True):
             f"\n[yellow]Ofullständig körning hittades[/] "
             f"([dim]{old_id}[/] startad {ts})"
         )
-        answer = console.input("  Fortsätt där den slutade? [[bold]J[/]/n]: ").strip().lower()
+        answer = (
+            console.input("  Fortsätt där den slutade? [[bold]J[/]/n]: ")
+            .strip()
+            .lower()
+        )
 
         if answer in ("", "j", "ja", "y", "yes"):
             run_id = incomplete["run_id"]
@@ -113,7 +127,9 @@ def cmd_search(use_ai: bool = True):
                 key = (row["keyword"], row["source"].replace("jobtech_", ""))
                 resume_state[key] = row["last_offset"]
                 if row["completed"] and row["total"]:
-                    resume_state[f"total_{row['keyword']}_{row['source'].replace('jobtech_', '')}"] = row["total"]
+                    resume_state[
+                        f"total_{row['keyword']}_{row['source'].replace('jobtech_', '')}"
+                    ] = row["total"]
             console.print(
                 f"  [green]Fortsätter[/] körning [dim]{run_id[:8]}[/] "
                 f"({len(progress_rows)} kombinationer sparade)"
@@ -141,13 +157,13 @@ def cmd_search(use_ai: bool = True):
     for kw, loc in combinations:
         resumed_offset = resume_state.get((kw, loc), 0)
         row_state[(kw, loc)] = {
-            "keyword":   kw,
-            "location":  loc,
-            "status":    "skip" if resume_state.get(f"total_{kw}_{loc}") else "wait",
-            "page":      (resumed_offset // 100) + 1 if resumed_offset else 1,
+            "keyword": kw,
+            "location": loc,
+            "status": "skip" if resume_state.get(f"total_{kw}_{loc}") else "wait",
+            "page": (resumed_offset // 100) + 1 if resumed_offset else 1,
             "total_pages": "?",
-            "found":     0,
-            "error":     None,
+            "found": 0,
+            "error": None,
         }
 
     saved_count = [0]
@@ -210,9 +226,14 @@ def cmd_search(use_ai: bool = True):
 
     def _build_live_renderable():
         from rich.console import Group
+
         return Group(
             _header(run_id, started_str),
-            Rule(" JOBTECH API  (Arbetsförmedlingen / Platsbanken)", style="cyan", align="left"),
+            Rule(
+                " JOBTECH API  (Arbetsförmedlingen / Platsbanken)",
+                style="cyan",
+                align="left",
+            ),
             _build_fetch_table(),
             _footer_text(),
         )
@@ -239,7 +260,7 @@ def cmd_search(use_ai: bool = True):
                 dupe_count[0] += 1
 
         # Uppdatera search_progress
-        completed = (page_num >= total_pages)
+        completed = page_num >= total_pages
         db.upsert_search_progress(
             run_id=run_id,
             source=f"jobtech_{location}",
@@ -254,7 +275,10 @@ def cmd_search(use_ai: bool = True):
     # --- FETCH-fas med Live ---
     console.print()
     with Live(_build_live_renderable(), console=console, refresh_per_second=4) as live:
-        def on_page_live(keyword, location, page_num, total_pages, new_jobs, error=None):
+
+        def on_page_live(
+            keyword, location, page_num, total_pages, new_jobs, error=None
+        ):
             on_page(keyword, location, page_num, total_pages, new_jobs, error)
             live.update(_build_live_renderable())
 
@@ -275,12 +299,14 @@ def cmd_search(use_ai: bool = True):
     if stop_flag[0]:
         db.mark_run_status(run_id, "stopped")
         console.print()
-        console.print(Panel(
-            f"[yellow]Sökning pausad.[/]\n"
-            f"  Sparade [bold]{saved_count[0]}[/] nya annonser.\n"
-            f"  Kör [cyan]python main.py search[/] för att fortsätta.",
-            border_style="yellow"
-        ))
+        console.print(
+            Panel(
+                f"[yellow]Sökning pausad.[/]\n"
+                f"  Sparade [bold]{saved_count[0]}[/] nya annonser.\n"
+                f"  Kör [cyan]python main.py search[/] för att fortsätta.",
+                border_style="yellow",
+            )
+        )
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         return
 
@@ -301,7 +327,7 @@ def cmd_search(use_ai: bool = True):
     else:
         console.print(
             "\n [dim]Inga anpassade källor. "
-            "Lägg till: [cyan]python main.py add-source \"Namn\" URL[/][/]"
+            'Lägg till: [cyan]python main.py add-source "Namn" URL[/][/]'
         )
 
     # --- OLLAMA-analys ---
@@ -351,19 +377,22 @@ def cmd_search(use_ai: bool = True):
     uncontacted = db.count_jobs(relevant_only=True, uncontacted_only=True)
 
     console.print()
-    console.print(Panel(
-        f"[green]✓ Sökning klar![/]\n"
-        f"  Nya annonser sparade: [bold]{saved_count[0]}[/]\n"
-        f"  Relevanta (totalt): [bold]{total_relevant}[/]\n"
-        f"  Ej kontaktade: [bold]{uncontacted}[/]\n\n"
-        f"  Visa lista: [cyan]python main.py list[/]",
-        border_style="green"
-    ))
+    console.print(
+        Panel(
+            f"[green]✓ Sökning klar![/]\n"
+            f"  Nya annonser sparade: [bold]{saved_count[0]}[/]\n"
+            f"  Relevanta (totalt): [bold]{total_relevant}[/]\n"
+            f"  Ej kontaktade: [bold]{uncontacted}[/]\n\n"
+            f"  Visa lista: [cyan]python main.py list[/]",
+            border_style="green",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # cmd_list
 # ---------------------------------------------------------------------------
+
 
 def cmd_list(show_all: bool = False):
     jobs = db.list_jobs(
@@ -373,8 +402,11 @@ def cmd_list(show_all: bool = False):
     )
 
     if not jobs:
-        msg = "Inga jobb hittades." if show_all else \
-              "Inga relevanta jobb. Prova: [cyan]python main.py list --all[/]"
+        msg = (
+            "Inga jobb hittades."
+            if show_all
+            else "Inga relevanta jobb. Prova: [cyan]python main.py list --all[/]"
+        )
         console.print(f"\n[yellow]{msg}[/]")
         return
 
@@ -387,12 +419,12 @@ def cmd_list(show_all: bool = False):
         show_lines=False,
         padding=(0, 1),
     )
-    t.add_column("ID",      width=5,  justify="right", style="dim")
+    t.add_column("ID", width=5, justify="right", style="dim")
     t.add_column("Företag", min_width=20, max_width=28)
-    t.add_column("Titel",   min_width=22, max_width=32)
-    t.add_column("Plats",   width=12)
+    t.add_column("Titel", min_width=22, max_width=32)
+    t.add_column("Plats", width=12)
     t.add_column("Kontakt", min_width=18, max_width=25)
-    t.add_column("Status",  width=14)
+    t.add_column("Status", width=14)
 
     for j in jobs:
         is_rel = j.get("is_relevant")
@@ -439,9 +471,12 @@ def cmd_list(show_all: bool = False):
 # cmd_add_source / cmd_sources
 # ---------------------------------------------------------------------------
 
+
 def cmd_add_source(name: str, url: str):
     source_id = db.add_source(name, url)
-    console.print(f"[green]✓[/] Källa tillagd (ID {source_id}): [bold]{name}[/] — {url}")
+    console.print(
+        f"[green]✓[/] Källa tillagd (ID {source_id}): [bold]{name}[/] — {url}"
+    )
 
 
 def cmd_sources():
@@ -449,15 +484,18 @@ def cmd_sources():
     if not sources:
         console.print(
             "\n[yellow]Inga anpassade källor.[/] "
-            "Lägg till: [cyan]python main.py add-source \"Namn\" URL[/]"
+            'Lägg till: [cyan]python main.py add-source "Namn" URL[/]'
         )
         return
 
-    t = Table(title=f"Anpassade källor — {len(sources)} st", box=box.ROUNDED,
-              header_style="bold cyan")
-    t.add_column("ID",     width=4, justify="right", style="dim")
-    t.add_column("Namn",   min_width=20)
-    t.add_column("URL",    min_width=30)
+    t = Table(
+        title=f"Anpassade källor — {len(sources)} st",
+        box=box.ROUNDED,
+        header_style="bold cyan",
+    )
+    t.add_column("ID", width=4, justify="right", style="dim")
+    t.add_column("Namn", min_width=20)
+    t.add_column("URL", min_width=30)
     t.add_column("Status", width=9)
     t.add_column("Senast körde", width=18)
 
@@ -474,6 +512,7 @@ def cmd_sources():
 # cmd_export
 # ---------------------------------------------------------------------------
 
+
 def cmd_export(filepath: str):
     jobs = db.list_jobs(relevant_only=False, uncontacted_only=False, limit=5000)
     if not jobs:
@@ -481,9 +520,19 @@ def cmd_export(filepath: str):
         return
 
     fieldnames = [
-        "id", "company_name", "company_url", "job_title", "location",
-        "is_remote", "contact_person", "contact_email", "source_url",
-        "is_relevant", "relevance_note", "emailed_at", "scraped_at"
+        "id",
+        "company_name",
+        "company_url",
+        "job_title",
+        "location",
+        "is_remote",
+        "contact_person",
+        "contact_email",
+        "source_url",
+        "is_relevant",
+        "relevance_note",
+        "emailed_at",
+        "scraped_at",
     ]
     with open(filepath, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
@@ -496,6 +545,7 @@ def cmd_export(filepath: str):
 # ---------------------------------------------------------------------------
 # cmd_mark_emailed
 # ---------------------------------------------------------------------------
+
 
 def cmd_mark_emailed(job_id: int):
     job = db.get_job(job_id)
@@ -513,6 +563,7 @@ def cmd_mark_emailed(job_id: int):
 # main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="LiaBot — hitta LIA-praktikplatser för Data Engineering"
@@ -520,19 +571,22 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     p_search = sub.add_parser("search", help="Hämta nya annonser och analysera")
-    p_search.add_argument("--no-ai", action="store_true",
-                          help="Skippa Ollama-analys")
+    p_search.add_argument("--no-ai", action="store_true", help="Skippa Ollama-analys")
 
     p_list = sub.add_parser("list", help="Visa sparade jobb")
-    p_list.add_argument("--all", action="store_true", dest="show_all",
-                        help="Visa alla jobb, inte bara relevanta")
+    p_list.add_argument(
+        "--all",
+        action="store_true",
+        dest="show_all",
+        help="Visa alla jobb, inte bara relevanta",
+    )
 
     p_src = sub.add_parser("add-source", help="Lägg till anpassad webbkälla")
     p_src.add_argument("name")
     p_src.add_argument("url")
 
-    sub.add_parser("sources",      help="Lista anpassade källor")
-    sub.add_parser("init-db",      help="Skapa databastabeller")
+    sub.add_parser("sources", help="Lista anpassade källor")
+    sub.add_parser("init-db", help="Skapa databastabeller")
 
     p_exp = sub.add_parser("export", help="Exportera jobb till CSV")
     p_exp.add_argument("file")
@@ -560,19 +614,21 @@ def main():
         cmd_init_db()
     else:
         # Visa hjälp med Rich-panel
-        console.print(Panel(
-            "[bold cyan]LiaBot[/] — hitta LIA-praktikplatser för Data Engineering\n\n"
-            "  [cyan]python main.py search[/]              Hämta + analysera\n"
-            "  [cyan]python main.py search --no-ai[/]      Hämta utan Ollama\n"
-            "  [cyan]python main.py list[/]                Visa relevanta jobb\n"
-            "  [cyan]python main.py list --all[/]          Visa alla jobb\n"
-            "  [cyan]python main.py add-source Namn URL[/] Lägg till källa\n"
-            "  [cyan]python main.py sources[/]             Lista källor\n"
-            "  [cyan]python main.py export jobb.csv[/]     Exportera till CSV\n"
-            "  [cyan]python main.py mark-emailed ID[/]     Markera kontaktat",
-            title="Kommandon",
-            border_style="cyan",
-        ))
+        console.print(
+            Panel(
+                "[bold cyan]LiaBot[/] — hitta LIA-praktikplatser för Data Engineering\n\n"
+                "  [cyan]python main.py search[/]              Hämta + analysera\n"
+                "  [cyan]python main.py search --no-ai[/]      Hämta utan Ollama\n"
+                "  [cyan]python main.py list[/]                Visa relevanta jobb\n"
+                "  [cyan]python main.py list --all[/]          Visa alla jobb\n"
+                "  [cyan]python main.py add-source Namn URL[/] Lägg till källa\n"
+                "  [cyan]python main.py sources[/]             Lista källor\n"
+                "  [cyan]python main.py export jobb.csv[/]     Exportera till CSV\n"
+                "  [cyan]python main.py mark-emailed ID[/]     Markera kontaktat",
+                title="Kommandon",
+                border_style="cyan",
+            )
+        )
 
 
 if __name__ == "__main__":

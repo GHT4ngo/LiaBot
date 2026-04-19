@@ -14,16 +14,30 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 JOBTECH_BASE = "https://jobsearch.api.jobtechdev.se"
 STOCKHOLM_MUNICIPALITY = "0180"  # Stockholms stad
-STOCKHOLM_REGION = "01"          # Stockholms Län — täcker hela länet inkl. Nacka, Solna, Lidingö m.fl.
+STOCKHOLM_REGION = (
+    "01"  # Stockholms Län — täcker hela länet inkl. Nacka, Solna, Lidingö m.fl.
+)
 PAGE_SIZE = 100
 MAX_RESULTS_PER_QUERY = 2000
 
 # Alla tillgängliga platser — visas i frontend
 AVAILABLE_LOCATIONS: list[dict] = [
-    {"id": "stockholm",        "label": "Stockholm (stad)",    "description": "Stockholms stad (municipality 0180)"},
-    {"id": "stockholm_region", "label": "Nära Stockholm",      "description": "Stockholms Län — inkl. Nacka, Solna, Sundbyberg, Lidingö m.fl."},
-    {"id": "remote",           "label": "Distansarbete",       "description": "Jobb med remote-flagga"},
-    {"id": "sweden",           "label": "Hela Sverige",        "description": "Ingen geografisk begränsning"},
+    {
+        "id": "stockholm",
+        "label": "Stockholm (stad)",
+        "description": "Stockholms stad (municipality 0180)",
+    },
+    {
+        "id": "stockholm_region",
+        "label": "Nära Stockholm",
+        "description": "Stockholms Län — inkl. Nacka, Solna, Sundbyberg, Lidingö m.fl.",
+    },
+    {"id": "remote", "label": "Distansarbete", "description": "Jobb med remote-flagga"},
+    {
+        "id": "sweden",
+        "label": "Hela Sverige",
+        "description": "Ingen geografisk begränsning",
+    },
 ]
 
 DEFAULT_LOCATIONS = ["stockholm", "remote", "sweden"]
@@ -40,34 +54,34 @@ def _fetch_page(keyword: str, offset: int, location: str) -> dict:
     """
     if location == "stockholm":
         params = {
-            "q":            keyword,
+            "q": keyword,
             "municipality": STOCKHOLM_MUNICIPALITY,
-            "offset":       offset,
-            "limit":        PAGE_SIZE,
-            "sort":         "pubdate-desc",
+            "offset": offset,
+            "limit": PAGE_SIZE,
+            "sort": "pubdate-desc",
         }
     elif location == "stockholm_region":
         params = {
-            "q":      keyword,
+            "q": keyword,
             "region": STOCKHOLM_REGION,
             "offset": offset,
-            "limit":  PAGE_SIZE,
-            "sort":   "pubdate-desc",
+            "limit": PAGE_SIZE,
+            "sort": "pubdate-desc",
         }
     elif location == "remote":
         params = {
-            "q":      keyword,
+            "q": keyword,
             "remote": "true",
             "offset": offset,
-            "limit":  PAGE_SIZE,
-            "sort":   "pubdate-desc",
+            "limit": PAGE_SIZE,
+            "sort": "pubdate-desc",
         }
     else:  # sweden — nationwide, no location filter
         params = {
-            "q":      keyword,
+            "q": keyword,
             "offset": offset,
-            "limit":  PAGE_SIZE,
-            "sort":   "pubdate-desc",
+            "limit": PAGE_SIZE,
+            "sort": "pubdate-desc",
         }
 
     resp = httpx.get(
@@ -106,26 +120,26 @@ def _normalize_hit(hit: dict, is_remote_search: bool = False) -> dict:
     relevant_period = f"t.o.m. {deadline}" if deadline else None
 
     return {
-        "source":          "jobtech",
-        "source_id":       hit.get("id", ""),
-        "source_url":      hit.get("webpage_url") or application.get("url"),
-        "company_name":    employer.get("name"),
-        "company_url":     employer.get("url"),
-        "contact_person":  None,
-        "contact_email":   None,
-        "contact_title":   None,
+        "source": "jobtech",
+        "source_id": hit.get("id", ""),
+        "source_url": hit.get("webpage_url") or application.get("url"),
+        "company_name": employer.get("name"),
+        "company_url": employer.get("url"),
+        "contact_person": None,
+        "contact_email": None,
+        "contact_title": None,
         "contact_linkedin": None,
-        "job_title":       hit.get("headline", ""),
+        "job_title": hit.get("headline", ""),
         "job_description": description_text[:4000],
-        "location":        location,
-        "is_remote":       workplace.get("municipality") is None or is_remote_search,
-        "posted_date":     _parse_date(hit.get("publication_date")),
+        "location": location,
+        "is_remote": workplace.get("municipality") is None or is_remote_search,
+        "posted_date": _parse_date(hit.get("publication_date")),
         "relevant_period": relevant_period,
-        "start_date":      None,  # extracted by AI from description if mentioned
-        "is_relevant":     None,
-        "relevance_note":  None,
-        "ai_highlight":    None,
-        "prerequisites":   None,
+        "start_date": None,  # extracted by AI from description if mentioned
+        "is_relevant": None,
+        "relevance_note": None,
+        "ai_highlight": None,
+        "prerequisites": None,
     }
 
 
@@ -226,7 +240,9 @@ def fetch_all(
                 if all_known:
                     break
 
-                completed = (offset >= total or offset >= MAX_RESULTS_PER_QUERY or not hits)
+                completed = (
+                    offset >= total or offset >= MAX_RESULTS_PER_QUERY or not hits
+                )
                 if completed:
                     break
 
