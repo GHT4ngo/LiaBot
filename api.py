@@ -126,6 +126,7 @@ class KeywordsIn(BaseModel):
 _search_running = False
 _search_log: list[str] = []        # kompat: används av /search/status
 _stop_flag: list[bool] = [False]
+_search_generation = 0
 
 from collections import deque
 import threading
@@ -338,9 +339,9 @@ Sök direkt efter praktikanter och LIA-platser. Exempel: "LIA data", "praktikant
 "trainee analytics", "exjobb data", "LIA praktik data".
 
 KATEGORI 2 — Teknikstack-sökord (6-8 sökord):
-Företag som söker dessa tekniker har datateam. Exempel: "dbt airflow", "databricks",
-"snowflake data", "business intelligence", "datawarehouse ETL", "Apache Spark",
-"Power BI analyst", "SQL data analyst".
+Företag som söker dessa tekniker har datateam. Exempel: "dbt", "airflow", "databricks",
+"snowflake", "business intelligence", "datawarehouse ETL", "Apache Spark",
+"Power BI", "SQL data analyst".
 
 KATEGORI 3 — Rollnamn på svenska och engelska (6-8 sökord):
 Direkta yrkesbenämningar. Exempel: "data engineer", "dataingenjör", "BI-utvecklare",
@@ -358,8 +359,20 @@ Svara ENBART med ett JSON-objekt:
         import ollama as _ol, re, json
         client = _ol.Client(host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
         resp = client.generate(model=os.getenv("OLLAMA_MODEL", "llama3.2"), prompt=prompt)
-        m = re.search(r"\{.*\}", resp.response, re.DOTALL)
-        keywords = json.loads(m.group()).get("keywords", []) if m else []
+        # Strip markdown fences and // comments before parsing
+        clean = re.sub(r"```(?:json)?", "", resp.response).strip()
+        clean = re.sub(r"//[^\n]*", "", clean)
+        m = re.search(r"\{.*\}", clean, re.DOTALL)
+        raw = json.loads(m.group()).get("keywords", []) if m else []
+        # Flatten if Ollama returned nested category objects instead of flat strings
+        keywords = []
+        for item in raw:
+            if isinstance(item, str):
+                keywords.append(item)
+            elif isinstance(item, dict):
+                for v in item.values():
+                    if isinstance(v, list):
+                        keywords += [x for x in v if isinstance(x, str)]
         if not keywords:
             raise HTTPException(status_code=500, detail="Ollama returnerade inga sökord — försök igen")
         os.environ["SEARCH_KEYWORDS"] = ",".join(keywords)
@@ -567,10 +580,12 @@ def _analyze_single_job(job_id: int):
 
 
 def _run_search(use_ai: bool = True):
-    global _search_running, _search_log, _stop_flag
+    global _search_running, _search_log, _search_generation
+    _search_generation += 1
+    my_generation = _search_generation
     _search_running = True
     _search_log = []
-    _stop_flag = [False]
+    _stop_flag[0] = False
 
     try:
         keywords_raw = os.getenv(
@@ -608,6 +623,9 @@ def _run_search(use_ai: bool = True):
         new_count = 0
         duplicate_count = 0
         for i, job in enumerate(jobs, 1):
+            if _stop_flag[0] or my_generation != _search_generation:
+                _log("Sökning stoppad av användaren.", "system")
+                break
             if use_ai:
                 _log(f"Analyserar ({i}/{len(jobs)}): {job.get('company_name', '?')} — {job.get('job_title', '?')[:50]}", "ai")
                 job = analyzer.analyze_job(job)
