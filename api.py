@@ -872,7 +872,7 @@ def git_pull():
 
     try:
         r = subprocess.run(
-            ["git", "pull", "--rebase"],
+            ["git", "pull", "--rebase", "origin", "main"],
             cwd=REPO_DIR,
             capture_output=True,
             text=True,
