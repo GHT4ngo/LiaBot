@@ -867,19 +867,32 @@ def update_config(update: ConfigUpdate):
 
 @app.post("/setup/update", tags=["Setup"])
 def git_pull():
-    """Kör git pull för att hämta senaste versionen från GitHub."""
+    """Kör git fetch + reset för att hämta senaste versionen från GitHub."""
     import subprocess
 
     try:
-        r = subprocess.run(
-            ["git", "pull", "--rebase", "origin", "main"],
+        # Step 1: fetch latest from origin/main
+        fetch = subprocess.run(
+            ["git", "fetch", "origin", "main"],
             cwd=REPO_DIR,
             capture_output=True,
             text=True,
             timeout=30,
         )
-        output = (r.stdout + r.stderr).strip()
-        ok = r.returncode == 0
+        if fetch.returncode != 0:
+            return {"ok": False, "output": (fetch.stdout + fetch.stderr).strip()}
+
+        # Step 2: reset local files to match origin/main
+        # Works regardless of local branch name or tracking config
+        reset = subprocess.run(
+            ["git", "reset", "--hard", "origin/main"],
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        output = (fetch.stderr + reset.stdout + reset.stderr).strip()
+        ok = reset.returncode == 0
         return {"ok": ok, "output": output}
     except FileNotFoundError:
         return {"ok": False, "output": "git är inte installerat eller inte i PATH"}
