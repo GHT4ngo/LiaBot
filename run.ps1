@@ -57,7 +57,7 @@ if ($check) {
 
 # --- Oppna appen ---
 Write-Host '  [3/3] Oppnar LiaBot i webblaesaren...' -ForegroundColor Yellow
-Start-Process 'https://lia-tracker.lovable.app/'
+Start-Process 'https://liabot.t4ngo.com/'
 Write-Host '  [3/3] Klart!' -ForegroundColor Green
 
 Write-Host ''

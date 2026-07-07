@@ -154,7 +154,7 @@ Startar allt i bakgrunden och öppnar dashboardet i webbläsaren. Ingen terminal
 ## Kom igång
 
 1. Dubbelklicka `LiaBot.vbs` (eller kör `.\run.ps1`)
-2. Öppna [lia-tracker.lovable.app](https://lia-tracker.lovable.app)
+2. Öppna [liabot.t4ngo.com](https://liabot.t4ngo.com)
 3. Gå till **Inställningar** — kontrollera att alla tre tjänster visar grönt
 4. Gå till **Sökord** — klicka "Generera med AI"
 5. Gå till **Dashboard** — klicka "Starta ny sökning"
